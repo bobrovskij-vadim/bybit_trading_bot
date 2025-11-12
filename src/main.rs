@@ -1,6 +1,11 @@
+mod api;
+
 use clap::{Parser, ValueEnum};
 use tracing::info;
 use tracing_subscriber;
+use crate::api::bybit::BybitApi;
+use crate::api::bybit_ws;
+
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -9,11 +14,13 @@ struct Cli {
     mode: Mode,
 }
 
+
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Mode {
     Live,
     Backtest,
 }
+
 
 #[tokio::main]
 async fn main() {
@@ -29,7 +36,17 @@ async fn main() {
     match cli.mode {
         Mode::Live => {
             info!("Running in live mode (connecting to Bybit WebSocket)...");
-            // TODO: Implement live mode logic
+
+
+            // REST API example: get current BTCUSD price
+            let api = BybitApi::new();
+            match api.get_price().await {
+                Ok(ticker) => info!("Current BTCUSDT price (REST): {}", ticker.last_price),
+                Err(e) => info!("Failed to get price from REST API: {}", e),
+            }
+
+            // Start WebSocket subscription
+            bybit_ws::subscribe_ticker("BTCUSD").await;
         }
         Mode::Backtest => {
             info!("Running in backtest mode...");
