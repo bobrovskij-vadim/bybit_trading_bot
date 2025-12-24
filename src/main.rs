@@ -1,22 +1,19 @@
 mod gui;
-// mod bybit_client;
+mod bybit_client;
 
 use gui::MyWindow;
 use iced::{Settings, Sandbox};
 
-// use bybit_client::run_client;
-// use reqwest::Error;
-
 #[tokio::main]
-// async fn main() -> Result<(), Error> {
 async fn main() -> iced::Result {    
 
     MyWindow::run(Settings::default())
-
-    // Ok(())
 }
 
 
+
+// use bybit_client::run_client;
+// use reqwest::Error;
 
 // #[tokio::main]
 // async fn main() -> Result<(), Error> {

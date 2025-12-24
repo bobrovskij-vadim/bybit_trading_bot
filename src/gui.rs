@@ -1,5 +1,6 @@
 use iced::widget::{column, text, container};
 use iced::{Element, Sandbox, Settings, Length};
+use crate::bybit_client;
 
 pub struct MyWindow;
 

@@ -1,6 +1,4 @@
-use reqwest::Error;
 use serde::Deserialize;
-
 
 pub const BYBIT_WS_URL: &str = "https://api.bybit.com/v5/market/tickers?category=spot";
 
@@ -35,44 +33,71 @@ pub struct TickerInfo {
 }
 
 
-pub async fn run_client() -> Result<(), Error> {
+pub async fn fetch_tickers() -> String {
+    let response = reqwest::get(BYBIT_WS_URL).await;
 
-    let response = reqwest::get(BYBIT_WS_URL)
-        .await?
-        .json::<BybitResponseV5<Vec<TickerInfo>>>() 
-        .await?;
-
-    match response.ret_code {
-        0 => {
-            println!("\n✅ Successfully retrieved the list of Tickers V5:");
-            
-            let all_tickets = response.result.list;
-
-            let filtered_tickers: Vec<TickerInfo> = all_tickets
-                .into_iter()
-                .filter(|ticker_info| {
-                    SYMBOLS.contains(&ticker_info.symbol.as_str())
-                })
-                .collect();
-            
-
-            println!("{:<5} {:<10} {:<20} {:<20} {:<20}", "ID", "Symbol", "Last Price", "Bid (Buy)", "Ask (Sell)");
-            println!("---------------------------------------------------------------------------------");
-
-            for (i, ticker) in filtered_tickers.iter().enumerate() {
-                println!("{:<5} {:<10} {:<20} {:<20} {:<20}",
-                    i + 1,
-                    ticker.symbol,
-                    ticker.last_price,
-                    ticker.bid1_price,
-                    ticker.ask1_price
-                );
+    match response {
+        Ok(resp) => {
+            let data = resp.json::<BybitResponseV5<Vec<TickerInfo>>>().await;
+            match data {
+                Ok(res) if res.ret_code == 0 => {
+                    let mut output = String::from("Symbol | Price | Bid | Ask\n");
+                    output.push_str("----------------------------------\n");
+                    
+                    for t in res.result.list.iter().filter(|t| SYMBOLS.contains(&t.symbol.as_str())) {
+                        output.push_str(&format!(
+                            "{:<10} | {:<10} | {:<10} | {:<10}\n", 
+                            t.symbol, t.last_price, t.bid1_price, t.ask1_price
+                        ));
+                    }
+                    output
+                }
+                Ok(res) => format!("API Error: {}", res.ret_msg),
+                Err(e) => format!("JSON Error: {}", e),
             }
         }
-        _ => {
-            eprintln!("❌ API V5 Error (Code: {}): {}", response.ret_code, response.ret_msg);
-        }
+        Err(e) => format!("Connection error: {}", e),
     }
-
-    Ok(())
 }
+
+// pub async fn run_client() -> Result<(), Error> {
+
+//     let response = reqwest::get(BYBIT_WS_URL)
+//         .await?
+//         .json::<BybitResponseV5<Vec<TickerInfo>>>() 
+//         .await?;
+
+//     match response.ret_code {
+//         0 => {
+//             println!("\n✅ Successfully retrieved the list of Tickers V5:");
+            
+//             let all_tickets = response.result.list;
+
+//             let filtered_tickers: Vec<TickerInfo> = all_tickets
+//                 .into_iter()
+//                 .filter(|ticker_info| {
+//                     SYMBOLS.contains(&ticker_info.symbol.as_str())
+//                 })
+//                 .collect();
+            
+
+//             println!("{:<5} {:<10} {:<20} {:<20} {:<20}", "ID", "Symbol", "Last Price", "Bid (Buy)", "Ask (Sell)");
+//             println!("---------------------------------------------------------------------------------");
+
+//             for (i, ticker) in filtered_tickers.iter().enumerate() {
+//                 println!("{:<5} {:<10} {:<20} {:<20} {:<20}",
+//                     i + 1,
+//                     ticker.symbol,
+//                     ticker.last_price,
+//                     ticker.bid1_price,
+//                     ticker.ask1_price
+//                 );
+//             }
+//         }
+//         _ => {
+//             eprintln!("❌ API V5 Error (Code: {}): {}", response.ret_code, response.ret_msg);
+//         }
+//     }
+
+//     Ok(())
+// }
